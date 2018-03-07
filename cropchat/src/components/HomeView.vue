@@ -1,24 +1,9 @@
-<script>
-  import data from '../data'
-  export default {
-    methods: {
-      displayDetails (id) {
-        this.$router.push({name: 'detail', params: { id: id }})
-      }
-    },
-    data () {
-      return {
-        'pictures': data.pictures
-      }
-    }
-  }
-</script>
 <template>
   <div>
     <div class="mdl-grid">
       <div class="mdl-cell mdl-cell--3-col mdl-cell mdl-cell--1-col-tablet mdl-cell--hide-phone"></div>
       <div class="mdl-cell mdl-cell--6-col mdl-cell--4-col-phone">
-        <div v-for="picture in this.pictures" class="image-card" @click="displayDetails(picture.id)">
+        <div v-for="picture in this.getCats()" class="image-card" @click="displayDetails(picture['.key'])">
           <div class="image-card__picture">
             <img :src="picture.url" />
           </div>
@@ -31,14 +16,54 @@
     <router-link class="add-picture-button mdl-button mdl-js-button mdl-button--fab mdl-button--colored" to="/post">
       <i class="material-icons">add</i>
     </router-link>
+    <router-link class="take-picture-button mdl-button mdl-js-button mdl-button--fab mdl-button--colored" to="/camera">
+      <i class="material-icons">camera_alt</i>
+    </router-link>
   </div>
 </template>
+<script>
+  export default {
+    methods: {
+      displayDetails (id) {
+        this.$router.push({name: 'detail', params: { id: id }})
+      },
+      getCats () {
+        if (navigator.onLine) {
+          this.saveCatsToCache()
+          return this.$root.cat
+        } else {
+          return JSON.parse(localStorage.getItem('cats'))
+        }
+      },
+      saveCatsToCache () {
+        this.$root.$firebaseRefs.cat.orderByChild('created_at').once('value', (snapchot) => {
+          let cachedCats = []
+          snapchot.forEach((catSnapchot) => {
+            let cachedCat = catSnapchot.val()
+            cachedCat['.key'] = catSnapchot.key
+            cachedCats.push(cachedCat)
+          })
+          localStorage.setItem('cats', JSON.stringify(cachedCats))
+        })
+      }
+    },
+    mounted () {
+      this.saveCatsToCache()
+    }
+  }
+</script>
 <style scoped>
   .add-picture-button {
     position: fixed;
     right: 24px;
     bottom: 24px;
     z-index: 998;
+  }
+  .take-picture-button {
+    position: fixed;
+    right: 24px;
+    bottom: 90px;
+    z-index: 5;
   }
   .image-card {
     position: relative;
@@ -60,4 +85,3 @@
     font-size: 14px;
     font-weight: bold;
   }
-</style>
